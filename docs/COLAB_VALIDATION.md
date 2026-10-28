@@ -254,6 +254,39 @@ Pushed rule: `DENY tcp 10.10.20.45/32 -> 0.0.0.0/0 port 443`.
 - An empty summary now gives the warning "No summary given."
 - The notebook prints `pushed Rule: ...` (no doubled prefix).
 
+## 8. Run 4: §2 rerun after the run-3 fixes (2026-10-28)
+
+Fresh clone of commit `1ffbb53` (the old `/content/sdn-guardian-mcp` was removed first, because
+the install cell skips the clone when that folder exists). L4, `transformers-bf16`. Only §2
+was rerun.
+
+Result: `parse retries: 0  committed: True  stop_reason: finished`, `summary warnings: 0`,
+6 tool calls, none rejected.
+
+1. `get_traffic_anomalies(window_s=60)`: CRITICAL SYN_FLOOD 10.10.20.45.
+2. `detect_network_drift(interface='GigabitEthernet0/2')`: vlan SoT 20, live 99.
+3. `simulate_flow_impact(src_cidr='10.10.20.45/32', action='deny', priority=100)`: FAIL,
+   SHADOWED by #10, fix 101.
+4. Same at priority 101: PASS.
+5. `push_safe_sdn_policy(simulation_id=...)` with no `timeout_s`: PENDING, auto-rollback in 30 s.
+6. `confirm_commit(...)`: COMMITTED, health check passed.
+
+Pushed rule: `DENY any 10.10.20.45/32 -> 0.0.0.0/0`. Model summary: "Successfully blocked SYN
+flood from 10.10.20.45 on GigabitEthernet0/2 with priority 101."
+
+**All run 2–3 findings are resolved:**
+
+| Finding | Run 2 | Run 3 | Run 4 |
+|---|---|---|---|
+| Rule scope | tcp/443 → controller | tcp/443 → any | all traffic from the attacker |
+| `timeout_s` | 300 | 120 | default (30 s) |
+| Rejected calls | 0 | 3 | 0 |
+| Summary | false drift claim | empty | true, no drift claim |
+
+The model now matches the replay agent's rule, at priority 101 (the minimum safe priority)
+instead of 150. The summary doesn't mention the unresolved drift. That is accurate but
+incomplete; the drift step's output still recommends reconciling the port.
+
 ## Change log
 
 - 2026-10-28: Notebook generated (Phase 8), verified locally, run on Colab: §2–§4 pass, §5
@@ -293,3 +326,5 @@ Pushed rule: `DENY tcp 10.10.20.45/32 -> 0.0.0.0/0 port 443`.
   tcp/443 only; `timeout_s` 120; empty summary; 3 rejected calls caused by prompt wording.
 - 2026-10-28: Fixes for run 3 (exact-argument prompt examples, port range `"any"`, clearer port
   error, empty-summary warning, notebook print). 112 tests green. Needs a §2 rerun in Colab.
+- 2026-10-28: Run 4 (§8): §2 rerun after the run-3 fixes. Full-source deny, 30 s default
+  timeout, no rejected calls, true summary, 0 warnings. The run 2–3 findings are resolved.
