@@ -1,0 +1,70 @@
+# PROGRESS — sdn-guardian-mcp
+
+## How to resume (new session)
+1. Read ONLY this file. Do not read `plan.md` or the whole repo; open only the files the current phase touches.
+2. Do the first unchecked phase. Run its done-check.
+3. Tick it, append one line to the Session log, stop.
+
+## Locked decisions
+- **Language:** all project content (code, docs, comments) is English. The user may chat in Turkish.
+- **Layout:** `pyproject.toml` + `src/sdn_guardian/`, using a venv: `python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"`.
+- **MCP lib:** the official `mcp` SDK (v2.x; check its FastMCP import path/API before Phase 5). Only one MCP lib.
+- **Safety is enforced by the server:**
+  - `push_safe_sdn_policy(simulation_id)` only accepts a PASS simulation that isn't stale (sha256 of the normalized rule plus the flow-table version).
+  - The rule is loaded from the stored simulation, never from push args.
+  - `confirm_commit` runs `health_check()` itself. If health fails, it refuses and rolls back.
+  - Pending commits persist in SQLite. `recover()` on startup rolls back expired ones.
+- **Rule model:** `FlowRule(rule_id, priority, src_cidr, dst_cidr, protocol, dst_port_range, action)`.
+  - Higher priority wins (OpenFlow). The IOS-XE adapter maps priority to ACL seq (`seq = 10000 - priority`).
+  - Conflicts: SHADOWED, OVERRIDES, GENERALIZATION, CORRELATION, REDUNDANT, MGMT_LOCKOUT.
+  - On failure, return a concrete fix, e.g. "Minimum safe priority: 101".
+- **Live adapter:** RESTCONF (httpx, `application/yang-data+json`) for reads. NETCONF (ncclient) candidate + `confirmed-commit` for writes, so the device-native rollback works.
+- **LLM:** `fdtn-ai/Foundation-Sec-8B-Instruct`, temperature 0, one `{"tool":..,"args":..}` JSON per turn, parser with retry. The backend picks by GPU:
+  - L4/A100: bf16 (optional vLLM on A100)
+  - T4: 4-bit NF4
+  - On failure: replay agent
+- **Tool outputs:** compact Markdown only, no raw JSON/YANG dumps.
+
+## Demo scenario constants
+- Controller `10.10.10.10`; protected subnet `10.10.10.0/24`.
+- Rule #10: `src 10.10.20.0/24`, priority 100, ALLOW (the shadowing trap).
+- Attacker `10.10.20.45`: SYN flood on switchport Gi0/2. SoT says Gi0/2 = VLAN 20; live state says VLAN 99 (drift).
+- Expected trace: anomalies → drift → simulate deny /32 at prio 40 (SHADOWED by #10, fix ≥101) → simulate at prio 150 (PASS) → push (commit_id, 30 s) → confirm (health OK) → COMMITTED.
+- Bonus: deny `10.10.10.0/24` pushed without confirmation; a 10 s timer fires, then ROLLED_BACK and the table is restored.
+
+## Phases
+- [x] **0 Scaffold:** PROGRESS.md, pyproject, requirements.txt, .env.example, LICENSE, .gitignore, package skeleton. Done-check: `pip install -e ".[dev]"` and pytest pass.
+- [x] **1 Core state:** `config.py`, `models.py`, `state.py` (schema + seed scenario), `adapters/base_adapter.py`, `adapters/mock_sdn_adapter.py`. Done-check: seed/adapter tests pass.
+- [x] **2 Decide engine:** `engine/conflict_simulator.py` + simulation store. Done-check: tests for shadowed, override, lockout, redundant and port-disjoint=PASS.
+- [x] **3 Act engine:** `engine/rollback_manager.py` (snapshot, asyncio timer, health, confirm, recover). Done-check tests:
+  - a 1 s timer restores the exact snapshot
+  - push without a PASS, or with a stale one, is rejected
+  - confirm refuses when health fails
+  - recover works
+- [x] **4 Observe/Orient:** `engine/telemetry_summarizer.py`, `engine/drift_detector.py`. Done-check: tests pass, and output is ≤ ~15 lines.
+- [x] **5 MCP server:** `mcp_server.py`.
+  - Tools: get_traffic_anomalies, detect_network_drift, simulate_flow_impact, push_safe_sdn_policy, confirm_commit, get_commit_status, list_flow_rules. Resource: `sdn://flows`.
+  - Also: `agent/replay_agent.py`.
+  - Done-check: a stdio end-to-end test asserts the canonical trace.
+- [x] **6 Live adapter:** `adapters/cisco_iosxe_adapter.py`. Done-check: tests with mocked httpx/ncclient pass.
+- [x] **7 LLM agent:** `agent/llm_backend.py` (GPU tiers), `agent/react_loop.py`. Done-check: parser/loop unit tests with a fake LLM pass.
+- [x] **8 Notebook:** `notebooks/Cisco_Foundation_Sec_8B_SDN_Guardian_Colab.ipynb` (live + replay + bonus rollback cell). Done-check: the user runs it in Colab.
+- [x] **9 Docs & CI:**
+  - README: Open in Colab badge, Mermaid diagram, Overview, Problem Statement, How It Works, Installation (Local & Colab), Cisco Sandbox Configuration, Usage Examples, Safety model & limitations
+  - `.github/workflows/ci.yml`, `examples/mcp_client_config.json`
+  - Done-check: ruff + pytest green.
+
+## Session log
+- 2026-10-28: Plan agreed. Phase 0 done (scaffold; deps pinned to latest: mcp 2.3.0, pydantic 2.14.1, transformers 5.21.0).
+- 2026-10-28: Phase 1 done (config, models w/ fingerprint + first_match, SQLite StateStore w/ versioned flow table + sims/commits tables + demo seed, async SDNAdapter w/ mgmt-reachability health_check, MockSDNAdapter; 15 tests green). Note: macOS marks the editable .pth `hidden` so Python skips it; added pytest `pythonpath = ["src"]`.
+- 2026-10-28: Phase 2 done (`engine/conflict_simulator.py`: pure `analyze()` with 4-dim match-space relations + pairwise anomaly table + probe-based MGMT_LOCKOUT; only SHADOWED/MGMT_LOCKOUT FAIL, others warn/info but PASS; `ConflictSimulator.simulate()` stores SimulationRecord, `load_pushable()` raises SimulationRejected if unknown/not PASS/hash mismatch/stale version; 28 tests green). Note for Phase 3: the bonus rule `deny 10.10.10.0/24` above #1 FAILs simulation (MGMT_LOCKOUT), so the bonus must use a PASS rule left unconfirmed.
+- 2026-10-28: Phase 3 done (`engine/rollback_manager.py`: `RollbackManager.push/confirm/rollback/recover/status/aclose`; push re-checks PASS+staleness under an asyncio lock, allows one PENDING commit at a time, snapshots before install; confirm runs health itself and rolls back on fail or past deadline; per-commit asyncio timer; restore errors -> FAILED; injectable clock; raises `CommitRejected`/`SimulationRejected`; 37 tests green, ruff clean). Note for Phase 5: tools should catch both exceptions and render Markdown; call `recover()` at startup and `aclose()` on shutdown.
+- 2026-10-28: Phase 4 done (`engine/telemetry_summarizer.py`: pure `summarize(samples, window_s)` aggregates per source IP, flags SYN_FLOOD (≥100 SYN/s and SYN:SYN-ACK ≥3, critical ≥1000/s) / HIGH_RATE (≥1000 pps), Markdown with top talkers + "Next:" hint; `engine/drift_detector.py`: pure `detect_drift(sot, live, interface=None)` for vlan/enabled/description/presence, VLAN impact line; async `TelemetrySummarizer`/`DriftDetector` wrappers; both outputs capped ≤15 lines; 51 tests green, ruff clean). Note for Phase 5: tool args map to `TelemetrySummarizer.summarize(window_s)` and `DriftDetector.detect(interface)`; mock telemetry is relative to `time.time()`, so seed with the current time.
+- 2026-10-28: Phase 5 done (`mcp_server.py`: mcp 2.3 `MCPServer` (FastMCP was renamed; `from mcp.server.mcpserver import MCPServer`), 7 tools + `sdn://flows` resource, all `structured_output=False` Markdown; lifespan builds a `Guardian` (store, adapter, engines), seeds mock demo, refreshes stale mock telemetry, runs `recover()`, `aclose()` on exit; rejections raise `ToolError` -> `is_error`; `--reset` re-seeds; `agent/replay_agent.py`: scripted `{"tool","args"}` turns (canonical + bonus w/ local `wait` pseudo-tool), IDs regex-parsed from outputs, `run_over_stdio()` + CLI `python -m sdn_guardian.agent.replay_agent`; bonus uses PASS `deny 10.10.20.0/24 -> 10.10.40.0/24` prio 200; 58 tests green incl. stdio e2e, ruff clean). Notes for Phase 6: `_make_adapter` in mcp_server.py raises NotImplementedError for live mode, wire `CiscoIOSXEAdapter` there. Static MCP resources cannot take a Context, so handlers read the Guardian from a closure. Server subprocess needs `PYTHONPATH` (see `server_env()`), because the default stdio env drops it and macOS hides the editable .pth.
+- 2026-10-28: Phase 6 done (`adapters/cisco_iosxe_adapter.py`: guardian-owned extended ACL `IOSXE_ACL_NAME` (default SDN-GUARDIAN) is the flow table, seq = 10000 - priority (priority ≤ 9999, one rule per priority); RESTCONF httpx reads of the native ACL + Ethernet interfaces (access VLAN, shutdown, description); unmodelable ACEs (src ports, gre, non-contiguous wildcards) raise `IOSXEError` instead of being widened; NETCONF via ncclient in `asyncio.to_thread`: candidate lock + edit-config + confirmed commit with `persist-id`, confirm = commit(persist_id), restore = cancel-commit then replace the ACL if it still differs; rule IDs and table versions kept in StateStore meta (new `get_meta/set_meta`); health adds a RESTCONF reachability check; `get_telemetry` returns [] (needs NetFlow); `SDNAdapter.aclose()` added and called by `Guardian.aclose`; `_make_adapter` wires live mode; 74 tests green incl. a fake device (MockTransport + fake ncclient manager), ruff clean). Notes for Phase 8/9: live mode has no telemetry and no seeded SoT, so the live notebook cell should seed SoT interfaces and run the trace from the drift/simulate steps; README must list device prereqs (`restconf`, `netconf-yang`, `netconf-yang feature candidate-datastore`, ACL bound to interfaces).
+- 2026-10-28: Phase 7 done (`agent/llm_backend.py`: pure `select_tier(requested, gpu, vllm_available)` -> bf16 (cc>=8.0 and >=20 GB, e.g. L4/A100), vllm (A100 + vllm installed, or requested), 4bit NF4 w/ fp16 compute (>=6 GB, e.g. T4), else replay; `TransformersBackend` (chat template -> greedy `do_sample=False`, `dtype=` kwarg for transformers 5), `VLLMBackend` (temperature 0); `load_backend()` returns `(None, choice)` on replay or any load failure; heavy imports lazy. `agent/react_loop.py`: `parse_action` takes the first balanced JSON object with a "tool" key (fences/prose ignored, unknown tools rejected), `ReactAgent` retries malformed replies with a corrective message (`max_parse_retries=2`), tool errors are fed back as observations, stops on `finish` pseudo-tool / max_turns / parse_error / backend_error; `run_agent(client, backend)` falls back to the canonical replay when there is no backend or it fails before any tool call; `run_over_stdio()` loads the tier backend; 100 tests green incl. a fake-LLM canonical trace, ruff clean). Notes for Phase 8: notebook calls `load_backend()` then `run_agent`/`run_over_stdio(backend=...)` and prints `format_trace(result.trace)`; the real model's JSON compliance is untested until Colab, so watch the `parse_error` rate.
+- 2026-10-28: Phase 8 built (`notebooks/Cisco_Foundation_Sec_8B_SDN_Guardian_Colab.ipynb`, 21 cells: install (clone `REPO_URL` param or reuse uploaded `/content/sdn-guardian-mcp`, `pip install -e .[llm,live]`, src on sys.path), settings form (HF_TOKEN from Colab Secrets, LLM_BACKEND, mock DB under /content), `guardian_client()` helper (uses `stdio_client(params, errlog=file)` because Jupyter stderr has no fileno; server log in /tmp/sdn_guardian_server.log), §2 `load_backend` + `run_agent` + parse-retry count, §3 canonical replay w/ asserts, §4 bonus rollback w/ asserts, §5 optional live IOS-XE (RUN_LIVE form; seeds SoT for one interface in a separate live DB, then list → drift → simulate → push → confirm → list), cleanup). All code cells smoke-tested locally with replay (and the live cell against mock); ruff lints .ipynb and is clean; 100 tests green. Not ticked: the done-check is the user's Colab run. Notes for Phase 9: the badge/`REPO_URL` use the placeholder `YOUR_GITHUB_USER`; replace it in the notebook and README once the GitHub repo exists. The notebook was generated by a throwaway script, so edit the .ipynb directly.
+- 2026-10-28: Phase 8 done. The user ran the notebook in Colab on an L4 (tier bf16, transformers-bf16) (code uploaded as a zip). Their first Install run didn't install `mcp`; a visible `pip install -e` fixed it. §2 real Foundation-Sec-8B: parse retries 0, stop_reason finished, COMMITTED; the model tried prio 100 (SHADOWED) and then 101 (PASS) on a narrow `tcp/443 -> 10.10.10.10/32` rule, and chose `timeout_s=300`. §3 canonical OK, §4 rollback OK, §5 skipped (no IOS-XE device). Phase 9 ideas, both optional: cap `timeout_s` on push, and hint the prompt toward blocking the whole source. Make the Install cell show pip errors (drop `-q` or print the tail).
+- 2026-10-28: Added `docs/COLAB_VALIDATION.md`: the full Colab process (local smoke test, zip upload, the `mcp` import fix, §2–§5 results, and a checklist for replacing the notebook). The user will replace the notebook with their Colab-fixed version; follow §5 of that doc (strip session-only cells, check outputs for secrets, ruff clean). Phase 9: link it from the README.
+- 2026-10-28: The user's Colab notebook replaced the generated one and was cleaned up: English only, `REPO_URL` clone restored, `mcp` installed explicitly in the install cell, `RUN_LIVE=False`, empty cells removed, demo outputs kept (no secrets). Ruff clean. Details in `docs/COLAB_VALIDATION.md`.
+- 2026-10-28: Phase 9 done (README: Colab + CI badges for `faithere1/sdn-guardian-mcp`, Mermaid architecture, Overview, Problem Statement, How It Works, Installation local/Colab, Cisco sandbox config, usage (replay CLI, MCP client, `claude mcp add`, Python), safety model & limitations, link to `docs/COLAB_VALIDATION.md`; `.github/workflows/ci.yml` (py 3.12/3.13, `.[dev,live]`, ruff + pytest); `examples/mcp_client_config.json` (`mcpServers`, absolute-path placeholders + PYTHONPATH); notebook `YOUR_GITHUB_USER` -> `faithere1`, install cell prints pip's tail on failure. ruff clean, 100 tests green on 3.12 and in a fresh 3.13 venv mirroring CI). The project is not a git repo yet; init/push is up to the user.

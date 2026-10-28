@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "sdn-guardian": {
+      "command": "/ABSOLUTE/PATH/TO/sdn-guardian-mcp/.venv/bin/sdn-guardian-mcp",
+      "args": [],
+      "env": {
+        "PYTHONPATH": "/ABSOLUTE/PATH/TO/sdn-guardian-mcp/src",
+        "SDN_GUARDIAN_MODE": "mock",
+        "SDN_GUARDIAN_DB": "/ABSOLUTE/PATH/TO/sdn-guardian-mcp/sdn_guardian.db",
+        "SDN_GUARDIAN_COMMIT_TIMEOUT": "30"
+      }
+    }
+  }
+}
