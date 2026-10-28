@@ -33,19 +33,33 @@ calling tools. Every change is dry-run first; only PASS simulations can be pushe
 push must be confirmed or it rolls back automatically.
 
 Workflow: get_traffic_anomalies -> detect_network_drift on the attack interface -> \
-simulate_flow_impact a deny for the attacker (/32) -> if FAIL, re-simulate with the suggested \
-"Minimum safe priority" or higher -> push_safe_sdn_policy with the PASS simulation_id -> \
-confirm_commit with the commit_id -> finish.
+simulate_flow_impact a deny for ALL traffic from the attacker -> if FAIL, re-simulate with the \
+suggested "Minimum safe priority" or higher -> push_safe_sdn_policy with the PASS \
+simulation_id -> confirm_commit with the commit_id -> finish.
+
+Blocking: set src_cidr to the attacker /32 and leave dst_cidr, protocol and dst_port_range \
+at their defaults (any). A port- or host-only deny leaves the attacker its other targets. \
+Omit timeout_s on push to keep the default rollback window.
 
 Tools:
 {tools}
 - {finish}(summary: string): end the task with a short summary.
+
+The summary states only what tool outputs confirm. No tool changes VLANs or switchports: \
+report drift as found and recommend reconciling it; never claim it was fixed.
 
 Reply with exactly ONE JSON object and nothing else, for example:
 {{"tool": "get_traffic_anomalies", "args": {{"window_s": 60}}}}
 Copy IDs (sim-..., commit-...) exactly from previous tool outputs."""
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
+_SENTENCE_RE = re.compile(r"[^.!?;\n]+")
+_DRIFT_RE = re.compile(r"\b(drift|vlan|switchport)", re.IGNORECASE)
+_FIXED_RE = re.compile(
+    r"\b(reconciled|fixed|corrected|resolved|remediated|restored|realigned)\b", re.IGNORECASE
+)
+_HEDGE_RE = re.compile(r"\b(recommend\w*|should|needs?|requires?|pending|not|manual\w*)\b", re.I)
+_APPLIED_RE = re.compile(r"\b(committed|applied|blocked|mitigated|installed)\b", re.IGNORECASE)
 
 
 class ActionParseError(ValueError):
@@ -148,6 +162,31 @@ class AgentResult:
     summary: str = ""
     backend: str = ""
     messages: list[Message] = field(default_factory=list)
+    summary_warnings: list[str] = field(default_factory=list)
+
+
+def unsupported_claims(summary: str, trace: list[TraceStep]) -> list[str]:
+    """Flag finish-summary claims the trace does not back up. A keyword heuristic: it catches
+    the known failure modes (drift "reconciled", a block claimed without a COMMITTED confirm),
+    not every possible false statement."""
+    warnings = []
+    committed = any(
+        s.tool == "confirm_commit" and not s.is_error and "COMMITTED" in s.output for s in trace
+    )
+    for sentence in _SENTENCE_RE.findall(summary):
+        if _HEDGE_RE.search(sentence):
+            continue
+        if _DRIFT_RE.search(sentence) and _FIXED_RE.search(sentence):
+            warnings.append(
+                f"Claims drift was fixed ({sentence.strip()!r}), but no tool changes VLANs or "
+                "switchports; drift was only reported."
+            )
+        elif _APPLIED_RE.search(sentence) and not committed:
+            warnings.append(
+                f"Claims a change took effect ({sentence.strip()!r}), but no confirm_commit "
+                "returned COMMITTED."
+            )
+    return warnings
 
 
 @dataclass
@@ -175,6 +214,7 @@ class ReactAgent:
             if action["tool"] == FINISH_TOOL:
                 result.stop_reason = "finished"
                 result.summary = str(action["args"].get("summary", ""))
+                result.summary_warnings = unsupported_claims(result.summary, trace)
                 return result
             try:
                 output, is_error = await call_tool(action["tool"], action["args"]), False

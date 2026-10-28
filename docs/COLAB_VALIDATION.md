@@ -160,6 +160,53 @@ The notebook the user ran in Colab, with the install fix, replaces the generated
      exists, then the real path.
 4. Add a line to this file's change log saying what changed in the notebook.
 
+## 6. Run 2: from GitHub (2026-10-28)
+
+The second Colab run, after the repo was pushed to `github.com/faithere1/sdn-guardian-mcp`.
+Opened from the README's **Open in Colab** badge; no zip upload.
+
+| Step | Result |
+|---|---|
+| Install | Cloned `REPO_URL`, no pip errors printed (the `pip_install()` helper stayed silent) |
+| GPU | `NVIDIA L4, 23034 MiB` |
+| Settings | mock mode, `/content/sdn_guardian_mock.db`, 30 s commit timeout, LLM backend `auto` |
+| MCP client helper | 7 tools listed; `mcp` imported without the run-1 fix |
+| §2 LLM agent | `Tier: bf16 (NVIDIA L4 (22 GB): bf16)`, `Backend: transformers-bf16`; `parse retries: 0  committed: True  stop_reason: finished`, 6 tool calls |
+| §3 Replay agent | `Canonical trace OK` (flow table v4) |
+| §4 Dead-man's switch | `Rollback OK`: v6 → push (10 s) → wait 11.5 s → ROLLED_BACK → v8, same 3 rules |
+| §5 Live IOS-XE | Skipped (`RUN_LIVE=False`) |
+
+**`HF_TOKEN` was not picked up** (the HF Hub warned about unauthenticated requests), but the
+model downloaded anyway (16.1 GB, 4 files in 44 s). The token is optional for this model; it only
+raises rate limits. Check that the secret exists and has **Notebook access** on.
+
+**§2 trace:** identical to run 1 (temperature 0): prio 100 SHADOWED → fix 101 → prio 101 PASS →
+push with `timeout_s=300` → COMMITTED. Rule: `DENY tcp 10.10.20.45/32 -> 10.10.10.10/32 port
+443`.
+
+**Problem found: the model's final summary is partly false.** It said: "SYN flood from
+10.10.20.45 mitigated successfully. VLAN drift on GigabitEthernet0/2 reconciled. Rule #21
+priority 101 DENY applied and committed." No tool reconciles drift; `detect_network_drift` only
+reports it, and the port is still in VLAN 99. The actions were correct; only the `finish`
+summary claimed an action that never happened.
+
+**Fix (after run 2, not yet rerun in Colab):**
+- The system prompt (`agent/react_loop.py`) now says the summary states only what tool outputs
+  confirm, and that drift is reported, never fixed.
+- `unsupported_claims(summary, trace)` flags drift/VLAN "fixed" claims and block claims without
+  a COMMITTED confirm. The result is in `AgentResult.summary_warnings`, and notebook §2 prints
+  it. It is a keyword heuristic for these known failure modes, not a general fact checker. The
+  run-2 summary is a test case and yields exactly one warning.
+
+**Open since run 1:** the model blocks only `tcp/443` to the controller, while the replay
+agent blocks all traffic from the attacker. It also picks `timeout_s=300`. **Fix:** the prompt
+now asks for a deny of all traffic from the attacker /32 (dst, protocol and port left at
+`any`) and to omit `timeout_s`. §2 now prints the pushed rule and the warning count. Rerun §2
+to check whether the model follows it.
+
+**Harmless warning:** transformers says it ignores `clean_up_tokenization_spaces=True` for the
+BPE tokenizer. Output is not affected.
+
 ## Change log
 
 - 2026-10-28: Notebook generated (Phase 8), verified locally, run on Colab: §2–§4 pass, §5
@@ -190,3 +237,8 @@ The notebook the user ran in Colab, with the install fix, replaces the generated
   server already caps `timeout_s` at 300 s (`MAX_TIMEOUT_S`), so the model's 300 s choice in §4
   was at the limit. Not rerun in Colab after these edits; the zip-upload path in §2 is no longer
   needed once the repo is public.
+- 2026-10-28: Run 2 from GitHub (§6): all cells pass. Found a hallucinated "drift reconciled"
+  claim in the model's final summary; recorded, not fixed yet.
+- 2026-10-28: Prompt fix for the run-2 findings (full-source deny, default timeout, honest
+  summary) plus `unsupported_claims()` and §2 output for warnings and the pushed rule. 107
+  tests green. Needs a §2 rerun in Colab.

@@ -19,7 +19,9 @@ from sdn_guardian.agent.react_loop import (
     list_tool_specs,
     parse_action,
     run_agent,
+    unsupported_claims,
 )
+from sdn_guardian.agent.replay_agent import TraceStep
 from sdn_guardian.config import Settings
 from sdn_guardian.mcp_server import create_server
 
@@ -175,6 +177,7 @@ async def test_react_loop_runs_canonical_trace(settings):
 
     assert result.stop_reason == "finished" and result.backend == "fake"
     assert result.summary.startswith("Attacker blocked")
+    assert result.summary_warnings == []
     assert [s.tool for s in result.trace] == [
         "get_traffic_anomalies",
         "detect_network_drift",
@@ -253,3 +256,50 @@ async def test_no_backend_runs_replay(settings):
         result = await run_agent(client, None)
     assert {s.name for s in specs} >= TOOLS
     assert result.stop_reason == "replay" and len(result.trace) == 6
+
+
+# --- prompt guidance and summary grounding (Colab run 2) --------------------------------------
+
+
+def test_system_prompt_steers_scope_timeout_and_honest_summary():
+    prompt = build_system_prompt([])
+    assert "ALL traffic from the attacker" in prompt
+    assert "Omit timeout_s" in prompt
+    assert "never claim it was fixed" in prompt
+
+
+COMMITTED_TRACE = [
+    TraceStep("detect_network_drift", {}, "- HIGH GigabitEthernet0/2: vlan SoT 20, live 99"),
+    TraceStep("confirm_commit", {}, "**Commit `commit-1`: COMMITTED**"),
+]
+ROLLED_BACK_TRACE = [TraceStep("get_commit_status", {}, "**Commit `commit-1`: ROLLED_BACK**")]
+
+# The real summary from Colab run 2 (docs/COLAB_VALIDATION.md §6).
+RUN2_SUMMARY = (
+    "SYN flood from 10.10.20.45 mitigated successfully. VLAN drift on GigabitEthernet0/2 "
+    "reconciled. Rule #21 priority 101 DENY applied and committed."
+)
+
+
+def test_run2_summary_flags_only_the_drift_claim():
+    warnings = unsupported_claims(RUN2_SUMMARY, COMMITTED_TRACE)
+    assert len(warnings) == 1
+    assert "drift was only reported" in warnings[0] and "reconciled" in warnings[0]
+
+
+@pytest.mark.parametrize(
+    "summary",
+    [
+        "Attacker blocked at prio 150, committed.",
+        "VLAN drift on Gi0/2 found (SoT 20, live 99); recommend reconciling the port.",
+        "Drift is not fixed and needs a manual change.",
+        "",
+    ],
+)
+def test_grounded_summaries_pass(summary):
+    assert unsupported_claims(summary, COMMITTED_TRACE) == []
+
+
+def test_block_claim_without_commit_is_flagged():
+    warnings = unsupported_claims("Attacker blocked.", ROLLED_BACK_TRACE)
+    assert len(warnings) == 1 and "no confirm_commit returned COMMITTED" in warnings[0]
