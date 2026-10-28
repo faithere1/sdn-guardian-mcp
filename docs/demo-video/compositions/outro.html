@@ -1,0 +1,29 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; color: #fff; font-family: Inter, sans-serif; }
+    #out-line {
+      position: absolute; left: 0; right: 0; top: 420px; text-align: center;
+      font: 900 80px/1.1 Inter, sans-serif; letter-spacing: -0.03em;
+    }
+    #out-line .accent { color: #049fd9; }
+    #out-repo {
+      position: absolute; left: 0; right: 0; top: 600px; text-align: center;
+      font: 400 40px "JetBrains Mono", monospace; color: #a9c1de;
+    }
+  </style>
+  <div data-hf-id="hf-x7nm" id="root" data-composition-id="outro" data-width="1920" data-height="1080">
+    <h2 data-hf-id="hf-5vcq" id="out-line" class="clip" data-start="0" data-duration="2.8">
+      <span data-hf-id="hf-i9d2" class="w">Unsafe</span> <span data-hf-id="hf-34gp" class="w">changes</span> <span data-hf-id="hf-3z5o" class="w accent">never</span>
+      <span data-hf-id="hf-nx6r" class="w">reach</span> <span data-hf-id="hf-9o0j" class="w">the</span> <span data-hf-id="hf-8i4w" class="w">network.</span>
+    </h2>
+    <div data-hf-id="hf-w1bk" id="out-repo" class="clip" data-start="0" data-duration="2.8">github.com/faithere1/sdn-guardian-mcp</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#out-line .w", { opacity: 0, filter: "blur(6px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" }, 0.1);
+    tl.fromTo("#out-repo", { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.45);
+    window.__timelines["outro"] = tl;
+  </script>
+</template>

@@ -54,6 +54,12 @@
   - `.github/workflows/ci.yml`, `examples/mcp_client_config.json`
   - Done-check: ruff + pytest green.
 
+## Next session: DevNet submission + LinkedIn share
+- Help the user submit the project to Cisco DevNet (e.g. DevNet Code Exchange / the relevant challenge; confirm the target and its rules with the user first) and draft a LinkedIn post.
+- Assets: `docs/assets/sdn-guardian-demo.mp4` (1080p, for LinkedIn), `docs/assets/sdn-guardian-demo.gif` (README), repo https://github.com/faithere1/sdn-guardian-mcp, story in `docs/COLAB_VALIDATION.md` (runs 1-4).
+- Nothing gets posted or submitted without the user's explicit OK.
+- Future work (README): T4 4-bit Colab run, real IOS-XE sandbox run, NetFlow telemetry, drift remediation tool, IPv6.
+
 ## Session log
 - 2026-10-28: Plan agreed. Phase 0 done (scaffold; deps pinned to latest: mcp 2.3.0, pydantic 2.14.1, transformers 5.21.0).
 - 2026-10-28: Phase 1 done (config, models w/ fingerprint + first_match, SQLite StateStore w/ versioned flow table + sims/commits tables + demo seed, async SDNAdapter w/ mgmt-reachability health_check, MockSDNAdapter; 15 tests green). Note: macOS marks the editable .pth `hidden` so Python skips it; added pytest `pythonpath = ["src"]`.
@@ -71,3 +77,4 @@
 - 2026-10-28: Pushed to `github.com/faithere1/sdn-guardian-mcp` (CI green on 3.12/3.13). Colab run 2 from the badge: all cells pass (details in `docs/COLAB_VALIDATION.md` §6). Fixed its findings: the system prompt asks for a full-source deny, the default timeout and a summary limited to tool-confirmed facts; `unsupported_claims()` puts flagged claims in `AgentResult.summary_warnings`; notebook §2 prints them and the pushed rule. 107 tests green. Next: rerun §2 in Colab.
 - 2026-10-28: Colab run 3 (§2 only, `docs/COLAB_VALIDATION.md` §7): destination widened to any but still tcp/443, `timeout_s` 120, empty summary, 3 calls rejected because of prompt wording. Fixed: exact-argument prompt examples, `dst_port_range` "any" -> all ports, port error suggests omitting the port, empty-summary warning. 112 tests green. Next: rerun §2.
 - 2026-10-28: Colab run 4 (§2 only, `docs/COLAB_VALIDATION.md` §8): the model pushed `DENY any 10.10.20.45/32 -> 0.0.0.0/0` at prio 101 with the 30 s default, 6 clean calls, 0 parse retries, a true summary and 0 warnings. The run 2–3 findings are resolved. Open: T4 4-bit tier and live IOS-XE are still untested.
+- 2026-10-28: README rewritten (Cisco palette badges, demo GIF header, highlights, problem table, styled Mermaid, Colab tier status, Future work incl. T4 4-bit runs, project layout, trademark disclaimer). Demo video built with HyperFrames in `docs/demo-video/` (20 s, 6 scenes, values from run 4; `REVIEW.md` there) -> `docs/assets/sdn-guardian-demo.gif` (960 px, 5.7 MB) and `.mp4` (1080p, 4.0 MB).

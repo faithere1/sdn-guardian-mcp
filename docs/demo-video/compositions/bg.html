@@ -1,0 +1,31 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; }
+    #bg-fill {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 45%, #0f2f57 0%, #07182f 70%);
+    }
+    #bg-grid {
+      position: absolute; left: -80px; top: -80px; width: 2080px; height: 1240px;
+      background-image:
+        linear-gradient(rgba(4, 159, 217, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(4, 159, 217, 0.07) 1px, transparent 1px);
+      background-size: 80px 80px;
+    }
+    #bg-band {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 8px;
+      background: linear-gradient(90deg, #049fd9, #6cc04a);
+    }
+  </style>
+  <div data-hf-id="hf-1xo8" id="root" data-composition-id="bg" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-1rva" id="bg-fill" class="clip" data-start="0" data-duration="20.2" data-layout-ignore></div>
+    <div data-hf-id="hf-0b98" id="bg-grid" class="clip" data-start="0" data-duration="20.2" data-layout-ignore
+      data-layout-allow-overflow></div>
+    <div data-hf-id="hf-abv0" id="bg-band" class="clip" data-start="0" data-duration="20.2" data-layout-ignore></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#bg-grid", { x: 0, y: 0 }, { x: 80, y: 40, duration: 20.2, ease: "none" }, 0);
+    window.__timelines["bg"] = tl;
+  </script>
+</template>

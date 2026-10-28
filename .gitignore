@@ -6,3 +6,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
+docs/demo-video/.hyperframes/
+docs/demo-video/renders/
+node_modules/
+docs/demo-video/.thumbnails/

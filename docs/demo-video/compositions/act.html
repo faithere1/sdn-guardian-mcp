@@ -1,0 +1,73 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; color: #fff; font-family: Inter, sans-serif; }
+    #act-card {
+      position: absolute; left: 360px; top: 280px; width: 1200px; height: 460px;
+      border-radius: 28px; background: #0d2648; border: 2px solid #1e3f6b;
+    }
+    #act-ring { position: absolute; left: 80px; top: 80px; width: 300px; height: 300px; }
+    #act-secs {
+      position: absolute; left: 80px; top: 80px; width: 300px; height: 300px;
+      display: flex; align-items: center; justify-content: center;
+      font: 700 64px "JetBrains Mono", monospace;
+    }
+    .act-status { position: absolute; left: 460px; top: 120px; font: 900 96px/1 Inter, sans-serif; }
+    #act-pending { color: #fbab18; }
+    #act-committed { color: #6cc04a; }
+    #act-check {
+      position: absolute; left: 80px; top: 80px; width: 300px; height: 300px;
+      display: flex; align-items: center; justify-content: center;
+      font: 900 140px/1 Inter, sans-serif; color: #6cc04a;
+    }
+    #act-committed, #act-sub2, #act-call2, #act-check { opacity: 0; }
+    .act-sub { position: absolute; left: 464px; top: 260px; font: 400 38px "JetBrains Mono", monospace; color: #a9c1de; }
+    .act-call {
+      position: absolute; left: 0; right: 0; top: 820px; text-align: center;
+      font: 400 32px "JetBrains Mono", monospace; color: #6f8bb0;
+    }
+  </style>
+  <div data-hf-id="hf-b1hp" id="root" data-composition-id="act" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-7dua" id="act-card" class="clip" data-start="0" data-duration="3.6" data-layout-allow-overlap>
+      <svg data-hf-id="hf-8vck" id="act-ring" viewBox="0 0 300 300">
+        <circle data-hf-id="hf-36no" cx="150" cy="150" r="130" fill="none" stroke="#1e3f6b" stroke-width="16" />
+        <circle data-hf-id="hf-nlo2" id="act-arc" cx="150" cy="150" r="130" fill="none" stroke="#fbab18" stroke-width="16"
+          stroke-linecap="round" stroke-dasharray="816.8" stroke-dashoffset="0"
+          transform="rotate(-90 150 150)" />
+      </svg>
+      <div data-hf-id="hf-1etl" id="act-check">✓</div>
+      <div data-hf-id="hf-jhu7" id="act-secs"><span data-hf-id="hf-182m" id="act-num">30</span>s</div>
+      <div data-hf-id="hf-k3nw" class="act-status" id="act-pending">PENDING</div>
+      <div data-hf-id="hf-l2qw" class="act-status" id="act-committed">COMMITTED</div>
+      <div data-hf-id="hf-6h1o" class="act-sub" id="act-sub1">auto-rollback unless confirmed</div>
+      <div data-hf-id="hf-exz1" class="act-sub" id="act-sub2">✓ health check passed</div>
+    </div>
+    <div data-hf-id="hf-uhnp" id="act-call1" class="act-call clip" data-start="0" data-duration="3.6">push_safe_sdn_policy(sim-6d70…)</div>
+    <div data-hf-id="hf-fsba" id="act-call2" class="act-call clip" data-start="0" data-duration="3.6">confirm_commit(commit-c7a3…)</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#act-card", { opacity: 0, y: 40, filter: "blur(10px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 0.05);
+    tl.fromTo("#act-call1", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0.25);
+    // Dead-man's switch drains: 30 s -> 28 s.
+    const c = { s: 30 };
+    const num = document.querySelector("#act-num");
+    tl.fromTo("#act-arc", { attr: { "stroke-dashoffset": 0 } },
+      { attr: { "stroke-dashoffset": 54.5 }, duration: 1.3, ease: "none" }, 0.4);
+    tl.fromTo(c, { s: 30 }, {
+      s: 28, duration: 1.3, ease: "none",
+      onUpdate: () => { num.textContent = String(Math.ceil(c.s)); },
+    }, 0.4);
+    // Confirm: health check passes, commit becomes permanent.
+    tl.to("#act-call1", { opacity: 0, duration: 0.12, ease: "power3.in" }, 1.92);
+    tl.fromTo("#act-call2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 2.0);
+    tl.to("#act-arc", { attr: { "stroke-dashoffset": 0 }, stroke: "#6cc04a", duration: 0.4, ease: "power2.inOut" }, 1.85);
+    tl.to("#act-secs", { opacity: 0, duration: 0.15, ease: "power3.in" }, 1.85);
+    tl.to("#act-pending, #act-sub1", { opacity: 0, filter: "blur(8px)", duration: 0.15, ease: "power3.in" }, 1.9);
+    tl.fromTo("#act-committed", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 2.05);
+    tl.fromTo("#act-check", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)" }, 2.0);
+    tl.fromTo("#act-sub2", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 2.15);
+    tl.to("#act-card, #act-call2", { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power3.in" }, 3.38);
+    window.__timelines["act"] = tl;
+  </script>
+</template>

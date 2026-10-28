@@ -1,0 +1,43 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; color: #fff; font-family: Inter, sans-serif; }
+    #obs-card {
+      position: absolute; left: 360px; top: 290px; width: 1200px; height: 470px;
+      border-radius: 28px; background: #0d2648; border: 2px solid #1e3f6b; padding: 56px 64px;
+    }
+    #obs-badge {
+      display: inline-block; padding: 8px 22px; border-radius: 10px; background: #e2231a;
+      font: 700 28px "JetBrains Mono", monospace; letter-spacing: 0.1em;
+    }
+    #obs-title { margin-top: 26px; font: 900 84px/1 Inter, sans-serif; letter-spacing: -0.02em; }
+    #obs-flow { margin-top: 24px; font: 400 36px "JetBrains Mono", monospace; color: #a9c1de; }
+    #obs-rate { margin-top: 40px; font: 700 64px "JetBrains Mono", monospace; color: #fbab18; }
+    #obs-call {
+      position: absolute; left: 0; right: 0; top: 820px; text-align: center;
+      font: 400 32px "JetBrains Mono", monospace; color: #6f8bb0;
+    }
+  </style>
+  <div data-hf-id="hf-k7m1" id="root" data-composition-id="observe" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-ayvq" id="obs-card" class="clip" data-start="0" data-duration="3.4">
+      <div data-hf-id="hf-tkw6" id="obs-badge">CRITICAL</div>
+      <div data-hf-id="hf-82h4" id="obs-title">SYN flood detected</div>
+      <div data-hf-id="hf-62k6" id="obs-flow">10.10.20.45 → 10.10.10.10 tcp/443 · Gi0/2</div>
+      <div data-hf-id="hf-56nc" id="obs-rate"><span data-hf-id="hf-wcmp" id="obs-num">0</span> SYN/s</div>
+    </div>
+    <div data-hf-id="hf-ijrm" id="obs-call" class="clip" data-start="0" data-duration="3.4">get_traffic_anomalies(window_s=60)</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#obs-card", { opacity: 0, y: 40, filter: "blur(10px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 0.1);
+    tl.fromTo("#obs-call", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0.25);
+    const n = { v: 0 };
+    const num = document.querySelector("#obs-num");
+    tl.fromTo(n, { v: 0 }, {
+      v: 3958, duration: 0.9, ease: "power3.out",
+      onUpdate: () => { num.textContent = Math.round(n.v).toLocaleString("en-US"); },
+    }, 0.45);
+    tl.to("#obs-card, #obs-call", { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power3.in" }, 3.18);
+    window.__timelines["observe"] = tl;
+  </script>
+</template>

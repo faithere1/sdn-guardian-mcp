@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #07182f;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-11xk"
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="20.2"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div data-hf-id="hf-7by7" id="bg" data-composition-id="bg" data-composition-src="compositions/bg.html"
+        data-start="0" data-duration="20.2" data-track-index="0" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 1"></div>
+      <div data-hf-id="hf-ly94" id="intro" data-composition-id="intro" data-composition-src="compositions/intro.html"
+        data-start="0" data-duration="2.6" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-558z" id="observe" data-composition-id="observe" data-composition-src="compositions/observe.html"
+        data-start="2.6" data-duration="3.4" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-a1wd" id="orient" data-composition-id="orient" data-composition-src="compositions/orient.html"
+        data-start="6" data-duration="2.4" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-pylr" id="decide" data-composition-id="decide" data-composition-src="compositions/decide.html"
+        data-start="8.4" data-duration="5.4" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-wwxd" id="act" data-composition-id="act" data-composition-src="compositions/act.html"
+        data-start="13.8" data-duration="3.6" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-qj8f" id="outro" data-composition-id="outro" data-composition-src="compositions/outro.html"
+        data-start="17.4" data-duration="2.8" data-track-index="1" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 2"></div>
+      <div data-hf-id="hf-e7ic" id="stepper" data-composition-id="stepper" data-composition-src="compositions/stepper.html"
+        data-start="2.6" data-duration="14.8" data-track-index="2" data-track-kind="graphics"
+        data-width="1920" data-height="1080" style="z-index: 3"></div>
+    </div>
+    <script>
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

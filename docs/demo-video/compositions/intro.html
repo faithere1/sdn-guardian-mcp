@@ -1,0 +1,35 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; color: #fff; font-family: Inter, sans-serif; }
+    #intro-eyebrow {
+      position: absolute; left: 0; right: 0; top: 330px; text-align: center;
+      font: 700 30px "JetBrains Mono", monospace; letter-spacing: 0.32em; color: #049fd9;
+    }
+    #intro-title {
+      position: absolute; left: 0; right: 0; top: 385px; text-align: center;
+      font: 900 168px/1.1 Inter, sans-serif; letter-spacing: -0.04em;
+    }
+    #intro-title .accent { color: #049fd9; }
+    #intro-sub {
+      position: absolute; left: 0; right: 0; top: 610px; text-align: center;
+      font: 400 44px Inter, sans-serif; color: #a9c1de;
+    }
+  </style>
+  <div data-hf-id="hf-ypfn" id="root" data-composition-id="intro" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-spnc" id="intro-eyebrow" class="clip" data-start="0" data-duration="2.6">CLOSED-LOOP SDN DEFENSE</div>
+    <h1 data-hf-id="hf-8y9r" id="intro-title" class="clip" data-start="0" data-duration="2.6">
+      <span data-hf-id="hf-wtbn" class="w">SDN</span> <span data-hf-id="hf-dti1" class="w accent">Guardian</span>
+    </h1>
+    <p data-hf-id="hf-2ybn" id="intro-sub" class="clip" data-start="0" data-duration="2.6">MCP tools for Cisco Foundation-Sec-8B</p>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#intro-title .w", { opacity: 0, filter: "blur(6px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.13, stagger: 0.067, ease: "power4.out" }, 0.12);
+    tl.fromTo("#intro-sub", { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.5);
+    tl.to("#intro-eyebrow, #intro-title, #intro-sub",
+      { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power3.in" }, 2.36);
+    window.__timelines["intro"] = tl;
+  </script>
+</template>

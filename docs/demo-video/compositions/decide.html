@@ -1,0 +1,70 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; color: #fff; font-family: Inter, sans-serif; }
+    #dec-card {
+      position: absolute; left: 260px; top: 280px; width: 1400px; height: 230px;
+      border-radius: 28px; background: #0d2648; border: 2px solid #1e3f6b;
+    }
+    #dec-rule {
+      position: absolute; left: 64px; top: 0; height: 226px; display: flex; align-items: center;
+      font: 700 46px "JetBrains Mono", monospace;
+    }
+    #dec-rule .deny { color: #e2231a; margin-right: 28px; }
+    #dec-prio {
+      position: absolute; left: 800px; top: 63px; height: 100px; width: 260px; overflow: hidden;
+      font: 700 46px/100px "JetBrains Mono", monospace; color: #a9c1de;
+    }
+    #dec-slot { position: absolute; left: 150px; top: 0; color: #fff; }
+    #dec-slot div { height: 100px; }
+    .dec-stamp {
+      position: absolute; left: 1110px; top: 58px; width: 240px; height: 110px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font: 900 58px Inter, sans-serif; letter-spacing: 0.04em;
+    }
+    #dec-fail { border: 5px solid #e2231a; color: #e2231a; }
+    #dec-pass { border: 5px solid #6cc04a; color: #6cc04a; }
+    #dec-fail, #dec-pass, #dec-why, #dec-ok, #dec-fix, #dec-call2 { opacity: 0; }
+    .dec-line {
+      position: absolute; left: 260px; width: 1400px; text-align: center;
+      font: 400 38px "JetBrains Mono", monospace;
+    }
+    #dec-why { top: 570px; color: #ff6b63; }
+    #dec-ok { top: 570px; color: #6cc04a; }
+    #dec-fix { top: 650px; color: #049fd9; font-weight: 700; }
+    .dec-call {
+      position: absolute; left: 0; right: 0; top: 820px; text-align: center;
+      font: 400 32px "JetBrains Mono", monospace; color: #6f8bb0;
+    }
+  </style>
+  <div data-hf-id="hf-5wf7" id="root" data-composition-id="decide" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-uyt2" id="dec-card" class="clip" data-start="0" data-duration="5.4" data-layout-allow-overlap>
+      <div data-hf-id="hf-g7hl" id="dec-rule"><span data-hf-id="hf-gm1x" class="deny">DENY</span>10.10.20.45/32 → any</div>
+      <div data-hf-id="hf-4ukt" id="dec-prio" data-layout-allow-overflow>prio<div data-hf-id="hf-zouc" id="dec-slot"><div data-hf-id="hf-zse3">100</div><div data-hf-id="hf-06p4">101</div></div></div>
+      <div data-hf-id="hf-xa29" class="dec-stamp" id="dec-fail">FAIL</div>
+      <div data-hf-id="hf-c1v3" class="dec-stamp" id="dec-pass">PASS</div>
+    </div>
+    <div data-hf-id="hf-nnx5" id="dec-why" class="dec-line clip" data-start="0" data-duration="5.4">SHADOWED by rule #10 (prio 100)</div>
+    <div data-hf-id="hf-21ng" id="dec-ok" class="dec-line clip" data-start="0" data-duration="5.4">Exception carved out of #10</div>
+    <div data-hf-id="hf-82gu" id="dec-fix" class="dec-line clip" data-start="0" data-duration="5.4">Fix: Minimum safe priority: 101</div>
+    <div data-hf-id="hf-1g3x" id="dec-call1" class="dec-call clip" data-start="0" data-duration="5.4">simulate_flow_impact(priority=100)</div>
+    <div data-hf-id="hf-eu5v" id="dec-call2" class="dec-call clip" data-start="0" data-duration="5.4">simulate_flow_impact(priority=101)</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#dec-card", { opacity: 0, y: 40, filter: "blur(10px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 0.05);
+    tl.fromTo("#dec-call1", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0.25);
+    tl.fromTo("#dec-fail", { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power4.out" }, 0.7);
+    tl.fromTo("#dec-why", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.85);
+    tl.fromTo("#dec-fix", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 1.5);
+    // Re-simulate at the suggested priority.
+    tl.to("#dec-call1", { opacity: 0, duration: 0.12, ease: "power3.in" }, 3.0);
+    tl.fromTo("#dec-call2", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 3.1);
+    tl.fromTo("#dec-slot", { y: 0 }, { y: -100, duration: 0.35, ease: "power3.inOut" }, 3.1);
+    tl.to("#dec-fail, #dec-why", { opacity: 0, filter: "blur(8px)", duration: 0.15, ease: "power3.in" }, 3.25);
+    tl.fromTo("#dec-pass", { opacity: 0, scale: 1.35 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power4.out" }, 3.45);
+    tl.fromTo("#dec-ok", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 3.55);
+    tl.to("#dec-card, #dec-ok, #dec-fix, #dec-call2", { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power3.in" }, 5.18);
+    window.__timelines["decide"] = tl;
+  </script>
+</template>

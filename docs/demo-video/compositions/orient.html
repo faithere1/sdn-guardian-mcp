@@ -1,0 +1,42 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; color: #fff; font-family: Inter, sans-serif; }
+    #ori-row { position: absolute; left: 360px; top: 300px; width: 1200px; height: 420px; }
+    .ori-box {
+      position: absolute; top: 0; width: 500px; height: 420px; border-radius: 28px;
+      background: #0d2648; border: 2px solid #1e3f6b; text-align: center; padding-top: 70px;
+    }
+    #ori-sot { left: 0; }
+    #ori-live { left: 700px; border-color: #fbab18; }
+    .ori-label { font: 700 30px "JetBrains Mono", monospace; letter-spacing: 0.1em; color: #a9c1de; }
+    .ori-vlan { margin-top: 40px; font: 900 120px/1 Inter, sans-serif; }
+    #ori-live .ori-vlan { color: #fbab18; }
+    #ori-neq {
+      position: absolute; left: 540px; top: 150px; width: 120px; text-align: center;
+      font: 900 110px/1 Inter, sans-serif; color: #fbab18;
+    }
+    #ori-call {
+      position: absolute; left: 0; right: 0; top: 820px; text-align: center;
+      font: 400 32px "JetBrains Mono", monospace; color: #6f8bb0;
+    }
+  </style>
+  <div data-hf-id="hf-3zau" id="root" data-composition-id="orient" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-nv0j" id="ori-row" class="clip" data-start="0" data-duration="2.4">
+      <div data-hf-id="hf-mn1b" class="ori-box" id="ori-sot"><div data-hf-id="hf-eua0" class="ori-label">SOURCE OF TRUTH</div><div data-hf-id="hf-4n4r" class="ori-vlan">VLAN 20</div></div>
+      <div data-hf-id="hf-58ak" id="ori-neq">≠</div>
+      <div data-hf-id="hf-pe6h" class="ori-box" id="ori-live"><div data-hf-id="hf-nypr" class="ori-label">LIVE · Gi0/2</div><div data-hf-id="hf-q6zn" class="ori-vlan">VLAN 99</div></div>
+    </div>
+    <div data-hf-id="hf-ecud" id="ori-call" class="clip" data-start="0" data-duration="2.4">detect_network_drift(interface="Gi0/2")</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#ori-sot", { opacity: 0, x: -60, filter: "blur(10px)" },
+      { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 0.05);
+    tl.fromTo("#ori-live", { opacity: 0, x: 60, filter: "blur(10px)" },
+      { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, 0.2);
+    tl.fromTo("#ori-neq", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.4)" }, 0.55);
+    tl.fromTo("#ori-call", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" }, 0.2);
+    tl.to("#ori-row, #ori-call", { opacity: 0, filter: "blur(8px)", duration: 0.18, ease: "power3.in" }, 2.18);
+    window.__timelines["orient"] = tl;
+  </script>
+</template>
