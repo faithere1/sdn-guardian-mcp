@@ -9,12 +9,26 @@ description = "Closed-loop SDN defense and safe policy execution via MCP and Cis
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
+keywords = ["cisco", "devnet", "mcp", "sdn", "network-security", "foundation-sec-8b", "ios-xe", "netconf", "restconf", "llm-agent"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Telecommunications Industry",
+    "Intended Audience :: System Administrators",
+    "Topic :: System :: Networking",
+    "Topic :: Security",
+    "Programming Language :: Python :: 3",
+]
 dependencies = [
     "mcp>=2.3,<3",
     "pydantic>=2.14,<3",
     "httpx>=0.28,<1",
     "python-dotenv>=1.2,<2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/faithere1/sdn-guardian-mcp"
+Issues = "https://github.com/faithere1/sdn-guardian-mcp/issues"
+Colab = "https://colab.research.google.com/github/faithere1/sdn-guardian-mcp/blob/main/notebooks/Cisco_Foundation_Sec_8B_SDN_Guardian_Colab.ipynb"
 
 [project.optional-dependencies]
 live = ["ncclient>=0.7,<1"]

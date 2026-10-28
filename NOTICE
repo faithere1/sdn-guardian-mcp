@@ -1,0 +1,21 @@
+SDN Guardian MCP
+
+Copyright 2026 faithere1 and the SDN Guardian MCP contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This project uses, but does not redistribute, the following third-party software and models,
+each under its own license:
+
+- Model Context Protocol Python SDK (mcp), MIT License
+- Pydantic, MIT License
+- HTTPX, BSD 3-Clause License
+- python-dotenv, BSD 3-Clause License
+- ncclient, Apache License 2.0 (optional, "live" extra)
+- Hugging Face transformers, accelerate, huggingface_hub, Apache License 2.0 (optional, "llm" extra)
+- bitsandbytes, MIT License (optional, "llm" extra)
+- fdtn-ai/Foundation-Sec-8B-Instruct, downloaded at runtime from Hugging Face under its own
+  model license
+
+Cisco, IOS-XE and DevNet are trademarks of Cisco Systems, Inc. This is an independent project,
+not affiliated with or endorsed by Cisco.

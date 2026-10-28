@@ -43,6 +43,11 @@ loop through seven tools; every safety rule is enforced by the server, not by th
 Every tool answers in a few lines of Markdown, never raw JSON or YANG, so an 8B model can
 reason over the results in a small context window.
 
+**Technology stack:** Python 3.10+, a standalone MCP server over stdio (works with any MCP
+client), Hugging Face transformers for the model, RESTCONF + NETCONF for Cisco IOS-XE.
+**Status:** beta (v0.1.0). Mock mode and the L4 model tier are validated end to end; live
+IOS-XE is tested against a simulated device only (see [Future work](#future-work)).
+
 ### Highlights
 
 - **Validated on a real GPU.** Foundation-Sec-8B (bf16, NVIDIA L4) ran the full defense in Colab:
@@ -311,6 +316,39 @@ print(result.stop_reason, result.summary, result.summary_warnings)
   simulate → push → confirm flow.
 - **Richer rule model.** IPv6, source ports and VLAN-scoped rules.
 
+## DevNet resources
+
+- **Related sandbox:** [Cisco DevNet Sandbox](https://developer.cisco.com/site/sandbox/), an
+  IOS-XE / Catalyst 8000V lab (reservable for NETCONF writes). Setup steps are in
+  [Cisco Sandbox Configuration](#cisco-sandbox-configuration).
+- **Learning lab:** [Introduction to Device Level Interfaces (NETCONF, RESTCONF, YANG)](https://developer.cisco.com/learning/modules/intro-device-level-interfaces)
+- **Model:** [Foundation-Sec-8B-Instruct](https://huggingface.co/fdtn-ai/Foundation-Sec-8B-Instruct)
+  by Cisco Foundation AI.
+
+## Getting help
+
+Open a [GitHub issue](https://github.com/faithere1/sdn-guardian-mcp/issues) with the mode (mock or
+live), where you ran it (local or Colab, GPU) and the tool output. Report security problems
+privately as described in [SECURITY.md](SECURITY.md).
+
+## Getting involved
+
+Contributions are welcome, especially the [Future work](#future-work) items: a Colab T4 run, a
+real IOS-XE sandbox run, NetFlow telemetry and drift remediation. See
+[CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Credits and references
+
+- [Foundation-Sec-8B](https://huggingface.co/fdtn-ai/Foundation-Sec-8B-Instruct), Cisco
+  Foundation AI's open-weight security LLM.
+- [Model Context Protocol](https://modelcontextprotocol.io) and its
+  [Python SDK](https://github.com/modelcontextprotocol/python-sdk).
+- Rule-anomaly classes (shadowing, correlation, generalization, redundancy) follow E. Al-Shaer
+  and H. Hamed, *Discovery of Policy Anomalies in Distributed Firewalls*, IEEE INFOCOM 2004.
+- [RFC 6241 (NETCONF)](https://www.rfc-editor.org/rfc/rfc6241) confirmed commit and
+  [RFC 8040 (RESTCONF)](https://www.rfc-editor.org/rfc/rfc8040).
+- [Google Colab](https://colab.research.google.com) for the GPU runs.
+
 ## Project layout
 
 ```text
@@ -326,5 +364,5 @@ docs/demo-video/             # HyperFrames source of the demo GIF
 
 ## License
 
-[Apache-2.0](LICENSE). Cisco, IOS-XE and DevNet are trademarks of Cisco Systems, Inc. This is an
+[Apache-2.0](LICENSE); copyright and third-party notices are in [NOTICE](NOTICE). Cisco, IOS-XE and DevNet are trademarks of Cisco Systems, Inc. This is an
 independent project, not affiliated with or endorsed by Cisco.
