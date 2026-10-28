@@ -37,13 +37,17 @@ simulate_flow_impact a deny for ALL traffic from the attacker -> if FAIL, re-sim
 suggested "Minimum safe priority" or higher -> push_safe_sdn_policy with the PASS \
 simulation_id -> confirm_commit with the commit_id -> finish.
 
-Blocking: set src_cidr to the attacker /32 and leave dst_cidr, protocol and dst_port_range \
-at their defaults (any). A port- or host-only deny leaves the attacker its other targets. \
-Omit timeout_s on push to keep the default rollback window.
+Block ALL traffic from the attacker: send only src_cidr, action and priority, so the rule \
+matches every destination, protocol and port. A port- or host-only deny leaves the attacker \
+its other targets. Exact examples:
+{{"tool": "simulate_flow_impact", "args": {{"src_cidr": "10.10.20.45/32", "action": "deny", \
+"priority": 100}}}}
+{{"tool": "push_safe_sdn_policy", "args": {{"simulation_id": "sim-..."}}}}
+Do not send timeout_s: the default rollback window applies.
 
 Tools:
 {tools}
-- {finish}(summary: string): end the task with a short summary.
+- {finish}(summary: string): end the task with a one-sentence summary. Always give one.
 
 The summary states only what tool outputs confirm. No tool changes VLANs or switchports: \
 report drift as found and recommend reconciling it; never claim it was fixed.
@@ -169,6 +173,8 @@ def unsupported_claims(summary: str, trace: list[TraceStep]) -> list[str]:
     """Flag finish-summary claims the trace does not back up. A keyword heuristic: it catches
     the known failure modes (drift "reconciled", a block claimed without a COMMITTED confirm),
     not every possible false statement."""
+    if not summary.strip():
+        return ["No summary given."]
     warnings = []
     committed = any(
         s.tool == "confirm_commit" and not s.is_error and "COMMITTED" in s.output for s in trace

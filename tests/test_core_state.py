@@ -202,3 +202,21 @@ async def test_adapter_health_check(adapter: MockSDNAdapter) -> None:
     report = await adapter.health_check()
     assert not report.ok
     assert "#60" in report.failures()[0].detail
+
+
+@pytest.mark.parametrize("ports", ["any", "ANY", " ", ""])
+def test_port_range_any_means_all_ports(ports):
+    # Colab run 3: the model sent dst_port_range="any" next to protocol="any".
+    rule = FlowRule(
+        rule_id=21, priority=100, src_cidr="10.10.20.45/32", dst_cidr="any",
+        protocol="any", dst_port_range=ports, action="deny",
+    )
+    assert rule.dst_port_range is None
+
+
+def test_port_without_l4_protocol_suggests_dropping_the_port():
+    with pytest.raises(ValueError, match="omit dst_port_range to match all ports"):
+        FlowRule(
+            rule_id=21, priority=100, src_cidr="10.10.20.45/32", protocol="any",
+            dst_port_range="443", action="deny",
+        )

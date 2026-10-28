@@ -264,7 +264,8 @@ async def test_no_backend_runs_replay(settings):
 def test_system_prompt_steers_scope_timeout_and_honest_summary():
     prompt = build_system_prompt([])
     assert "ALL traffic from the attacker" in prompt
-    assert "Omit timeout_s" in prompt
+    assert '"args": {"src_cidr": "10.10.20.45/32", "action": "deny", "priority": 100}' in prompt
+    assert "Do not send timeout_s" in prompt
     assert "never claim it was fixed" in prompt
 
 
@@ -293,7 +294,6 @@ def test_run2_summary_flags_only_the_drift_claim():
         "Attacker blocked at prio 150, committed.",
         "VLAN drift on Gi0/2 found (SoT 20, live 99); recommend reconciling the port.",
         "Drift is not fixed and needs a manual change.",
-        "",
     ],
 )
 def test_grounded_summaries_pass(summary):
@@ -303,3 +303,7 @@ def test_grounded_summaries_pass(summary):
 def test_block_claim_without_commit_is_flagged():
     warnings = unsupported_claims("Attacker blocked.", ROLLED_BACK_TRACE)
     assert len(warnings) == 1 and "no confirm_commit returned COMMITTED" in warnings[0]
+
+
+def test_empty_summary_is_flagged():
+    assert unsupported_claims("  ", COMMITTED_TRACE) == ["No summary given."]

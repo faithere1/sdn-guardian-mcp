@@ -207,6 +207,53 @@ to check whether the model follows it.
 **Harmless warning:** transformers says it ignores `clean_up_tokenization_spaces=True` for the
 BPE tokenizer. Output is not affected.
 
+## 7. Run 3: §2 rerun after the prompt fix (2026-10-28)
+
+Only the install, settings and client cells and §2 were rerun (L4, `transformers-bf16`).
+§3/§4 were not rerun; nothing they use changed.
+
+Result: `parse retries: 0  committed: True  stop_reason: finished`, `summary warnings: 0`,
+9 tool calls (6 in run 2), 3 of them rejected by the server.
+
+| # | Call | Result |
+|---|---|---|
+| 1–2 | anomalies, drift on Gi0/2 | same as run 2 |
+| 3 | simulate prio 100, `dst_cidr='any'`, `protocol='any'`, `dst_port_range='any'` | error: port range `'any'` is not an int |
+| 4 | same with `dst_port_range='443'` | error: port range requires tcp or udp |
+| 5 | same with `protocol='tcp'` | FAIL, SHADOWED by #10, fix 101 |
+| 6 | prio 101 | PASS |
+| 7 | push with `timeout_s=0` | error: must be between 1 and 300 |
+| 8 | push with `timeout_s=120` | PENDING |
+| 9 | confirm | COMMITTED, health check passed |
+
+Pushed rule: `DENY tcp 10.10.20.45/32 -> 0.0.0.0/0 port 443`.
+
+**Findings:**
+- **Partly better.** The destination is now `any` (run 2: only the controller), but the rule is
+  still port 443 only.
+- **The prompt wording misled it.** "Leave dst_port_range at its default (any)" was read
+  literally as `dst_port_range='any'`, which the server rejects. The next error ("requires
+  protocol tcp or udp") pointed it toward adding `tcp`, not toward dropping the port.
+- **"Omit timeout_s" became `timeout_s=0`**, then 120 s. Better than 300 s, not the 30 s
+  default.
+- **Empty summary.** No `Model summary:` line was printed, so the model finished with an empty
+  or missing summary. There was no false claim this time, and also no summary.
+- **Safety held.** All three bad calls were rejected, and the committed rule was simulated
+  first.
+- Cosmetic: the notebook prints `pushed rule: Rule: ...` (doubled prefix).
+
+**Fix (after run 3, not yet rerun in Colab):**
+- The prompt shows the exact arguments instead of describing defaults:
+  `{"src_cidr": "10.10.20.45/32", "action": "deny", "priority": 100}` for simulate and
+  `{"simulation_id": "sim-..."}` for push, plus "Do not send timeout_s" and "Always give" a
+  one-sentence summary.
+- `FlowRule` accepts `dst_port_range` `"any"` or empty as all ports, like `dst_cidr` and
+  `protocol` already accept `"any"`. Run 3's step 3 would now be valid.
+- The port-without-tcp/udp error now adds "omit dst_port_range to match all ports", so the
+  model is pointed at a full block instead of `tcp`.
+- An empty summary now gives the warning "No summary given."
+- The notebook prints `pushed Rule: ...` (no doubled prefix).
+
 ## Change log
 
 - 2026-10-28: Notebook generated (Phase 8), verified locally, run on Colab: §2–§4 pass, §5
@@ -242,3 +289,7 @@ BPE tokenizer. Output is not affected.
 - 2026-10-28: Prompt fix for the run-2 findings (full-source deny, default timeout, honest
   summary) plus `unsupported_claims()` and §2 output for warnings and the pushed rule. 107
   tests green. Needs a §2 rerun in Colab.
+- 2026-10-28: Run 3 (§7): §2 rerun after the prompt fix. Destination widened to `any`, still
+  tcp/443 only; `timeout_s` 120; empty summary; 3 rejected calls caused by prompt wording.
+- 2026-10-28: Fixes for run 3 (exact-argument prompt examples, port range `"any"`, clearer port
+  error, empty-summary warning, notebook print). 112 tests green. Needs a §2 rerun in Colab.

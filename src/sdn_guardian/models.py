@@ -52,6 +52,8 @@ class FlowRule(BaseModel):
         if isinstance(v, int):
             return (v, v)
         if isinstance(v, str):
+            if v.strip().lower() in ("", "any"):  # like dst_cidr/protocol "any": all ports
+                return None
             lo, _, hi = v.partition("-")
             return (int(lo), int(hi or lo))
         return v
@@ -64,7 +66,10 @@ class FlowRule(BaseModel):
         if not (0 <= lo <= hi <= 65535):
             raise ValueError(f"invalid dst_port_range {self.dst_port_range}")
         if self.protocol not in (Protocol.TCP, Protocol.UDP):
-            raise ValueError("dst_port_range requires protocol tcp or udp")
+            raise ValueError(
+                "dst_port_range requires protocol tcp or udp; omit dst_port_range to match "
+                "all ports"
+            )
         return self
 
     @property
